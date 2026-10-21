@@ -1,0 +1,147 @@
+
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SnapTalk</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#121b30;--line:#263550;--blue:#5793ff;--text:#f4f7ff;--muted:#9aa9c3}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,Arial,sans-serif}
+header{height:68px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;border-bottom:1px solid var(--line);background:#0e1628}
+.logo{font-size:23px;font-weight:850;color:#8ab4ff}
+main{max-width:1100px;margin:auto;padding:22px;display:grid;grid-template-columns:250px 1fr;gap:18px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}
+h2{font-size:17px;margin:0 0 15px}
+.avatar{width:62px;height:62px;border-radius:50%;background:#284c85;display:grid;place-items:center;font-size:25px;margin-bottom:12px}
+.muted{color:var(--muted);font-size:13px}
+.track{height:9px;background:#263550;border-radius:10px;overflow:hidden;margin:10px 0}
+#bar{height:100%;width:0;background:linear-gradient(90deg,#5793ff,#a78bfa)}
+button{border:0;border-radius:9px;background:var(--blue);color:white;padding:10px 13px;font-weight:700;cursor:pointer}
+button:hover{filter:brightness(1.12)}
+input{width:100%;background:#0b1324;border:1px solid var(--line);border-radius:9px;padding:11px;color:white;margin:5px 0 10px}
+.friend{padding:10px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
+.friend:last-child{border:0}
+.messages{height:300px;overflow:auto;background:#0b1324;border-radius:10px;padding:12px;margin-bottom:12px}
+.msg{padding:8px 10px;background:#1a2943;border-radius:10px;margin:8px 0;overflow-wrap:anywhere}
+.msg b{color:#8ab4ff}
+.row{display:flex;gap:8px}
+.row input{flex:1;min-width:0}
+#notice{color:#8ab4ff;font-size:13px}
+@media(max-width:650px){main{grid-template-columns:1fr;padding:12px}header{padding:0 14px}.messages{height:260px}}
+</style>
+</head>
+<body>
+<header><div class="logo">✦ SnapTalk</div><span class="muted">Tengstu. Spjallaðu. Hækkaðu level.</span></header>
+<main>
+<aside>
+<section class="panel">
+<div class="avatar">😎</div>
+<h2 id="profileName">SnapUser</h2>
+<div class="muted">Level <span id="level">1</span> · <span id="xp">0</span> XP</div>
+<div class="track"><div id="bar"></div></div>
+<div class="muted" id="next">100 XP í næsta level</div>
+<label for="name">Notandanafn</label>
+<input id="name" maxlength="20" placeholder="Veldu nafn">
+<button id="save">Vista prófíl</button>
+<button id="earn" style="margin-top:8px">⭐ Fá 10 XP</button>
+</section>
+<section class="panel">
+<h2>🤝 Vinir</h2>
+<div class="muted">Bættu við vinum í prufuútgáfunni.</div>
+<input id="friendName" maxlength="20" placeholder="Nafn vinar">
+<button id="addFriend">+ Bæta við vini</button>
+<div id="friends" style="margin-top:12px"></div>
+</section>
+</aside>
+<section>
+<section class="panel">
+<h2>💬 SnapTalk spjall</h2>
+<div class="muted" style="margin-bottom:12px">Velkomin(n) í SnapTalk! Skrifaðu skilaboð hér að neðan.</div>
+<div class="messages" id="messages" aria-live="polite"></div>
+<form id="chatForm" class="row">
+<input id="chatInput" maxlength="500" placeholder="Skrifaðu skilaboð..." required>
+<button type="submit">Senda</button>
+</form>
+<div id="notice">Prufuútgáfa · skilaboð vistast í þessum vafra.</div>
+</section>
+<section class="panel">
+<h2>🚀 Um SnapTalk</h2>
+Þitt litla samfélag. Safnaðu XP, hækkaðu level og byggðu upp vinalistann þinn!
+</section>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key))??fallback}catch{return fallback}};
+let profile=read("st-profile",{name:"SnapUser",xp:0});
+let friends=read("st-friends",[]);
+let messages=read("st-messages",[]);
+function persist(){localStorage.setItem("st-profile",JSON.stringify(profile))}
+function renderProfile(){
+$("profileName").textContent=profile.name;
+$("name").value=profile.name;
+const level=Math.floor(profile.xp/100)+1;
+$("level").textContent=level;
+$("xp").textContent=profile.xp;
+$("bar").style.width=(profile.xp%100)+"%";
+$("next")=(null);
+}
+function updateXP(){
+const level=Math.floor(profile.xp/100)+1;
+$("level").textContent=level;
+$("xp").textContent=profile.xp;
+$("bar").style.width=(profile.xp%100)+"%";
+$("next").textContent=(100-profile.xp%100)+" XP í næsta level";
+}
+function renderFriends(){
+$("friends").replaceChildren();
+friends.forEach((name,i)=>{
+const item=document.createElement("div");item.className="friend";
+const label=document.createElement("span");label.textContent="🟢 "+name;
+const remove=document.createElement("button");remove.textContent="×";remove.setAttribute("aria-label","Fjarlægja "+name);
+remove.onclick=()=>{friends.splice(i,1);localStorage.setItem("st-friends",JSON.stringify(friends));renderFriends()};
+item.append(label,remove);$("friends").append(item);
+});
+}
+function renderMessages(){
+$("messages").replaceChildren();
+messages.forEach(m=>{
+const item=document.createElement("div");item.className="msg";
+const name=document.createElement("b");name.textContent=m.name+": ";
+const text=document.createElement("span");text.textContent=m.text;
+item.append(name,text);$("messages").append(item);
+});
+$("messages").scrollTop=$("messages").scrollHeight;
+}
+$("save").onclick=()=>{
+const name=$("name").value.trim().slice(0,20);
+if(!name)return alert("Skrifaðu notandanafn fyrst.");
+profile.name=name;persist();renderProfile();
+};
+$("earn").onclick=()=>{
+profile.xp+=10;persist();updateXP();
+$("notice").textContent="⭐ Þú fékkst 10 XP!";
+};
+$("addFriend").onclick=()=>{
+const name=$("friendName").value.trim().slice(0,20);
+if(!name)return;
+if(name.toLowerCase()===profile.name.toLowerCase())return alert("Þú getur ekki bætt sjálfum þér við.");
+if(friends.some(n=>n.toLowerCase()===name.toLowerCase()))return alert("Þessi vinur er nú þegar á listanum.");
+friends.push(name);localStorage.setItem("st-friends",JSON.stringify(friends));
+$("friendName").value="";renderFriends();
+};
+$("chatForm").onsubmit=e=>{
+e.preventDefault();
+const text=$("chatInput").value.trim();
+if(!text)return;
+messages.push({name:profile.name,text});
+messages=messages.slice(-100);
+localStorage.setItem("st-messages",JSON.stringify(messages));
+$("chatInput").value="";renderMessages();
+};
+renderProfile();updateXP();renderFriends();renderMessages();
+</script>
+</body>
+</html>
