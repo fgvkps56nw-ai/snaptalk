@@ -1,0 +1,189 @@
+
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SnapTalk 💙</title>
+<style>
+:root{--bg:#0b1020;--panel:#141e33;--line:#293853;--blue:#5793ff;--white:#f5f7ff;--muted:#a5b2ca}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--white);font-family:Arial,sans-serif}
+header{height:70px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;background:#10192b;border-bottom:1px solid var(--line)}
+.logo{font-size:26px;font-weight:bold;color:#8ab4ff}
+.status{color:#72e0a3;font-size:13px}
+main{max-width:1100px;margin:auto;padding:24px;display:grid;grid-template-columns:270px 1fr;gap:20px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:18px}
+h2{font-size:18px;margin:0 0 16px}
+.avatar{height:76px;width:76px;border-radius:50%;display:grid;place-items:center;background:#263f70;font-size:35px;margin-bottom:12px}
+.muted{color:var(--muted);font-size:13px}
+input{width:100%;padding:12px;background:#0b1426;color:white;border:1px solid var(--line);border-radius:9px;margin:7px 0 12px}
+button{background:var(--blue);color:white;border:0;padding:11px 14px;border-radius:9px;font-weight:bold;cursor:pointer}
+button:hover{filter:brightness(1.12)}
+.secondary{background:#263650}
+.track{height:9px;background:#2a3852;border-radius:9px;margin:12px 0;overflow:hidden}
+#bar{height:100%;width:0;background:linear-gradient(90deg,#5793ff,#a78bfa)}
+.friend{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+.messages{height:320px;overflow:auto;background:#0b1426;border-radius:10px;padding:12px;margin-bottom:12px}
+.msg{padding:10px;background:#1b2a43;border-radius:10px;margin:8px 0;overflow-wrap:anywhere}
+.msg strong{color:#8ab4ff}
+.row{display:flex;gap:8px}
+.row input{flex:1;min-width:0}
+#notice{font-size:12px;color:var(--muted);margin-top:10px}
+.hero{background:linear-gradient(130deg,#1a3157,#171d38);padding:24px;border-radius:14px;margin-bottom:18px}
+.hero h1{margin:0 0 8px;font-size:28px}
+@media(max-width:700px){main{grid-template-columns:1fr;padding:12px}header{padding:0 14px}.messages{height:260px}.hero h1{font-size:23px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">✦ SnapTalk</div>
+  <div class="status">● SnapTalk er tilbúið</div>
+</header>
+
+<main>
+<aside>
+  <section class="panel">
+    <div class="avatar">😎</div>
+    <h2 id="profileName">SnapUser</h2>
+    <div class="muted">Level <span id="level">1</span> · <span id="xp">0</span> XP</div>
+    <div class="track"><div id="bar"></div></div>
+    <div class="muted" id="next">100 XP í næsta level</div>
+    <label for="name">Notandanafn</label>
+    <input id="name" maxlength="20" placeholder="Þitt nafn">
+    <button id="save">Vista prófíl</button>
+    <button id="earn" style="margin-top:8px">⭐ Fá 10 XP</button>
+  </section>
+
+  <section class="panel">
+    <h2>🤝 Vinir</h2>
+    <div class="muted">Bættu nöfnum við vinalistann þinn.</div>
+    <input id="friendName" maxlength="20" placeholder="Nafn vinar">
+    <button id="addFriend">+ Bæta við</button>
+    <div id="friends" style="margin-top:12px"></div>
+  </section>
+</aside>
+
+<section>
+  <div class="hero">
+    <h1>Velkomin(n) í SnapTalk 💙</h1>
+    <p>Spjallaðu, safnaðu XP og hækkaðu level!</p>
+    <div class="muted">Þitt samfélag byrjar hér.</div>
+  </div>
+
+  <section class="panel">
+    <h2>💬 Spjallið</h2>
+    <div class="messages" id="messages" aria-live="polite"></div>
+    <form id="chatForm" class="row">
+      <input id="chatInput" maxlength="500" placeholder="Skrifaðu skilaboð..." required>
+      <button type="submit">Senda</button>
+    </form>
+    <div id="notice">Prufuútgáfa: gögn vistast í þessum vafra.</div>
+  </section>
+
+  <section class="panel">
+    <h2>✨ Um SnapTalk</h2>
+    <p class="muted">Kynntu þér nýtt fólk, byggðu upp prófílinn þinn og safnaðu XP þegar þú spjallar.</p>
+  </section>
+</section>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+function load(key,fallback){
+  try{return JSON.parse(localStorage.getItem(key))??fallback}
+  catch{return fallback}
+}
+let profile=load("snaptalk-profile",{name:"SnapUser",xp:0});
+let friends=load("snaptalk-friends",[]);
+let messages=load("snaptalk-messages",[]);
+
+function save(key,value){
+  try{localStorage.setItem(key,JSON.stringify(value))}
+  catch{$("notice").textContent="Ekki tókst að vista gögn í þessum vafra."}
+}
+function updateProfile(){
+  $("profileName").textContent=profile.name;
+  $("name").value=profile.name;
+  $("level").textContent=Math.floor(profile.xp/100)+1;
+  $("xp").textContent=profile.xp;
+  $("bar").style.width=(profile.xp%100)+"%";
+  $("next").textContent=(100-profile.xp%100)+" XP í næsta level";
+}
+function renderFriends(){
+  $("friends").replaceChildren();
+  friends.forEach((name,index)=>{
+    const item=document.createElement("div");
+    item.className="friend";
+    const label=document.createElement("span");
+    label.textContent="🟢 "+name;
+    const remove=document.createElement("button");
+    remove.className="secondary";
+    remove.textContent="Fjarlægja";
+    remove.onclick=()=>{
+      friends.splice(index,1);
+      save("snaptalk-friends",friends);
+      renderFriends();
+    };
+    item.append(label,remove);
+    $("friends").append(item);
+  });
+}
+function renderMessages(){
+  $("messages").replaceChildren();
+  messages.forEach(message=>{
+    const item=document.createElement("div");
+    item.className="msg";
+    const name=document.createElement("strong");
+    name.textContent=message.name+": ";
+    const text=document.createElement("span");
+    text.textContent=message.text;
+    item.append(name,text);
+    $("messages").append(item);
+  });
+  $("messages").scrollTop=$("messages").scrollHeight;
+}
+$("save").onclick=()=>{
+  const name=$("name").value.trim().slice(0,20);
+  if(!name){alert("Skrifaðu notandanafn fyrst.");return}
+  profile.name=name;
+  save("snaptalk-profile",profile);
+  updateProfile();
+  $("notice").textContent="Prófíll vistaður!";
+};
+$("earn").onclick=()=>{
+  profile.xp+=10;
+  save("snaptalk-profile",profile);
+  updateProfile();
+  $("notice").textContent="⭐ Þú fékkst 10 XP!";
+};
+$("addFriend").onclick=()=>{
+  const name=$("friendName").value.trim().slice(0,20);
+  if(!name)return;
+  if(name.toLowerCase()===profile.name.toLowerCase()){
+    alert("Þú getur ekki bætt sjálfum þér við.");return;
+  }
+  if(friends.some(friend=>friend.toLowerCase()===name.toLowerCase())){
+    alert("Þetta nafn er nú þegar á listanum.");return;
+  }
+  friends.push(name);
+  save("snaptalk-friends",friends);
+  $("friendName").value="";
+  renderFriends();
+};
+$("chatForm").onsubmit=event=>{
+  event.preventDefault();
+  const text=$("chatInput").value.trim();
+  if(!text)return;
+  messages.push({name:profile.name,text});
+  messages=messages.slice(-100);
+  save("snaptalk-messages",messages);
+  $("chatInput").value="";
+  renderMessages();
+};
+updateProfile();
+renderFriends();
+renderMessages();
+</script>
+</body>
+</html>
